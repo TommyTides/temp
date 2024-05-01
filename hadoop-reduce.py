@@ -1,85 +1,98 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import csv
 import sys
 
-# Output file for all tasks
-OUTPUT_FILE = "combined_output.txt"
+# Task 1: Calculate average height per country
+def height_mapper(data):
+    for row in data:
+        country = row['Nationality']
+        height = row['Height']
+        if height and country:
+            print(country + '\t' + height + ',1')
 
-# Mapper Function for Task 1
-def mapper_task1():
-    for line in sys.stdin:
-        # Split the input line into columns
-        columns = line.strip().split(',')
-        # Extract relevant data for Task 1
-        if len(columns) == 43:  # Ensure all columns are present
-            value = columns[10]  # Value column
-            if value != '€0':
-                country = columns[4]
-                height = columns[28]  # Height column
-                if height.isdigit():  # Check if height is a valid integer
-                    yield "{}\t{}\n".format(country, height)
+def height_reducer(data):
+    current_country = None
+    total_height = 0
+    total_players = 0
 
-# Reducer Function for Task 1
-def reducer_task1():
-    country_height = {}
-    count = {}
-    for line in sys.stdin:
-        country, height = line.strip().split('\t')
-        height = int(height)
-        if country in country_height:
-            country_height[country] += height
-            count[country] += 1
+    for row in data:
+        country = row[0]
+        height, count = row[1].split(',')
+        count = int(count)
+
+        if current_country == country:
+            total_height += float(height)
+            total_players += count
         else:
-            country_height[country] = height
-            count[country] = 1
+            if current_country:
+                average_height = total_height / total_players
+                print(current_country + '\t' + str(average_height))
+            current_country = country
+            total_height = float(height)
+            total_players = count
 
-    for country in country_height:
-        avg_height = float(country_height[country]) / count[country]
-        yield "{}\t{}\n".format(country, avg_height)
+    if current_country:
+        average_height = total_height / total_players
+        print(current_country + '\t' + str(average_height))
 
-# Mapper Function for Task 2
-def mapper_task2():
-    for line in sys.stdin:
-        # Split the input line into columns
-        columns = line.strip().split(',')
-        # Extract relevant data for Task 2
-        if len(columns) == 43:  # Ensure all columns are present
-            value = columns[10]  # Value column
-            if value != '€0':
-                preferred_foot = columns[14]  # Preferred Foot column
-                value = columns[10]  # Value column
-                yield "{}\t{}\n".format(preferred_foot, value)
+# Task 2: Remove players with value €0
+def value_mapper(data):
+    for row in data:
+        player_id = row['ID']
+        value = row['Value']
+        if value != '€0':
+            print(player_id + '\t' + ','.join(row.values()))
 
-# Reducer Function for Task 2
-def reducer_task2():
-    foot_value = {}
-    count = {}
-    for line in sys.stdin:
-        preferred_foot, value = line.strip().split('\t')
-        value = int(value.strip('€').strip('K'))
-        if preferred_foot in foot_value:
-            foot_value[preferred_foot] += value
-            count[preferred_foot] += 1
+# Task 3: Calculate average value per preferred foot
+def foot_mapper(data):
+    for row in data:
+        preferred_foot = row['Preferred Foot']
+        value = row['Value']
+        if preferred_foot and value:
+            print(preferred_foot + '\t' + value + ',1')
+
+def foot_reducer(data):
+    current_foot = None
+    total_value = 0
+    total_players = 0
+
+    for row in data:
+        foot = row[0]
+        value, count = row[1].split(',')
+        count = int(count)
+
+        if current_foot == foot:
+            total_value += float(value[1:])  # Remove '€' from value
+            total_players += count
         else:
-            foot_value[preferred_foot] = value
-            count[preferred_foot] = 1
+            if current_foot:
+                average_value = total_value / total_players
+                print(current_foot + '\t' + '€{:.2f}K'.format(average_value))
+            current_foot = foot
+            total_value = float(value[1:])  # Remove '€' from value
+            total_players = count
 
-    for foot in foot_value:
-        avg_value = float(foot_value[foot]) / count[foot]
-        yield "{}\t€{}K\n".format(foot, avg_value)
+    if current_foot:
+        average_value = total_value / total_players
+        print(current_foot + '\t' + '€{:.2f}K'.format(average_value))
 
 if __name__ == "__main__":
-    # Open the output file in append mode
-    with open(OUTPUT_FILE, "a") as output_file:
-        # Execute Task 1
-        for line in mapper_task1():
-            output_file.write(line)
-        for line in reducer_task1():
-            output_file.write(line)
+    script_name = sys.argv[0]
 
-        # Execute Task 2
-        for line in mapper_task2():
-            output_file.write(line)
-        for line in reducer_task2():
-            output_file.write(line)
+    # Read data from CSV file
+    with open('Soccer2019.csv', 'r', newline='', encoding='utf-8') as csvfile:
+        reader = csv.DictReader(csvfile)
+        data = list(reader)
+
+    if 'height' in script_name:
+        height_mapper(data)
+    elif 'value' in script_name:
+        value_mapper(data)
+    elif 'foot' in script_name:
+        foot_mapper(data)
+    elif 'height_avg' in script_name:
+        height_reducer(data)
+    elif 'foot_avg' in script_name:
+        foot_reducer(data)
