@@ -1,14 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+#!/usr/bin/env python
+
 import csv
 import sys
 
 # Task 1: Calculate average height per country
 def height_mapper(data):
     for row in data:
-        country = row['Nationality']
-        height = row['Height']
+        country = row[4]  # Index of 'Nationality'
+        height = row[25]  # Index of 'Height'
         if height and country:
             print(country + '\t' + height + ',1')
 
@@ -40,16 +42,16 @@ def height_reducer(data):
 # Task 2: Remove players with value €0
 def value_mapper(data):
     for row in data:
-        player_id = row['ID']
-        value = row['Value']
+        player_id = row[0]  # Index of 'ID'
+        value = row[10]     # Index of 'Value'
         if value != '€0':
-            print(player_id + '\t' + ','.join(row.values()))
+            print(player_id + '\t' + ','.join(row))
 
 # Task 3: Calculate average value per preferred foot
 def foot_mapper(data):
     for row in data:
-        preferred_foot = row['Preferred Foot']
-        value = row['Value']
+        preferred_foot = row[12]  # Index of 'Preferred Foot'
+        value = row[10]           # Index of 'Value'
         if preferred_foot and value:
             print(preferred_foot + '\t' + value + ',1')
 
@@ -82,8 +84,8 @@ if __name__ == "__main__":
     script_name = sys.argv[0]
 
     # Read data from CSV file
-    with open('Soccer2019.csv', 'r', newline='', encoding='utf-8') as csvfile:
-        reader = csv.DictReader(csvfile)
+    with open('Soccer2019.csv', 'rb') as csvfile:
+        reader = csv.reader(csvfile)
         data = list(reader)
 
     if 'height' in script_name:
@@ -96,3 +98,4 @@ if __name__ == "__main__":
         height_reducer(data)
     elif 'foot_avg' in script_name:
         foot_reducer(data)
+
